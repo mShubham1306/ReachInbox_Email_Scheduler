@@ -1,0 +1,121 @@
+# render.yaml — Infrastructure as Code for Render.com
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Services defined here:
+#   1. reachinbox-api      — Express API (Web Service)
+#   2. reachinbox-worker   — BullMQ background worker (Background Worker)
+#
+# External dependencies to provision separately in the Render dashboard:
+#   - PostgreSQL  (Render Managed Postgres or Neon / Supabase)
+#   - Redis       (Render Redis or Upstash)
+
+services:
+  # --- 1. API Web Service ----------------------------------------------------
+  - type: web
+    name: reachinbox-api
+    runtime: node
+    region: oregon               # change to your preferred region
+    plan: free                   # upgrade to starter/standard for production
+    rootDir: backend
+    buildCommand: npm install && npm run build && npm run migrate:prod
+    startCommand: npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # -- Database ----------------------------------------------------------
+      - key: DATABASE_URL
+        sync: false              # set this manually in the Render dashboard
+
+      # -- Redis -------------------------------------------------------------
+      - key: REDIS_URL
+        sync: false              # set this manually (Render Redis / Upstash URL)
+
+      # -- Elasticsearch (optional — leave blank to disable) -----------------
+      - key: ELASTICSEARCH_URL
+        value: ""                # e.g. https://xxx.es.io:9243 — blank = disabled
+
+      # -- App ---------------------------------------------------------------
+      - key: PORT
+        value: "5000"
+      - key: FRONTEND_URL
+        sync: false              # e.g. https://your-app.vercel.app
+      - key: SESSION_SECRET
+        generateValue: true      # Render auto-generates a secure random value
+
+      # -- Google OAuth ------------------------------------------------------
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false              # e.g. https://reachinbox-api.onrender.com/auth/google/callback
+
+      # -- Slack OAuth -------------------------------------------------------
+      - key: SLACK_CLIENT_ID
+        sync: false
+      - key: SLACK_CLIENT_SECRET
+        sync: false
+      - key: SLACK_REDIRECT_URI
+        sync: false              # e.g. https://reachinbox-api.onrender.com/auth/slack/callback
+
+      # -- Email (Ethereal for testing / real SMTP for production) -----------
+      - key: ETHEREAL_HOST
+        value: smtp.ethereal.email
+      - key: ETHEREAL_PORT
+        value: "587"
+      - key: ETHEREAL_USER
+        sync: false
+      - key: ETHEREAL_PASSWORD
+        sync: false
+
+      # -- Worker tuning -----------------------------------------------------
+      - key: WORKER_CONCURRENCY
+        value: "5"
+      - key: MIN_EMAIL_DELAY_MS
+        value: "2000"
+      - key: DEFAULT_HOURLY_LIMIT
+        value: "100"
+
+      # -- Bull Board admin UI -----------------------------------------------
+      - key: BULL_BOARD_USER
+        value: admin
+      - key: BULL_BOARD_PASSWORD
+        generateValue: true
+
+  # --- 2. BullMQ Background Worker ------------------------------------------
+  - type: worker
+    name: reachinbox-worker
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: DATABASE_URL
+        sync: false
+
+      - key: REDIS_URL
+        sync: false
+
+      - key: ELASTICSEARCH_URL
+        value: ""
+
+      # Worker tuning
+      - key: WORKER_CONCURRENCY
+        value: "5"
+      - key: MIN_EMAIL_DELAY_MS
+        value: "2000"
+      - key: DEFAULT_HOURLY_LIMIT
+        value: "100"
+
+      # Slack (for notifications sent from worker)
+      - key: SLACK_CLIENT_ID
+        sync: false
+      - key: SLACK_CLIENT_SECRET
+        sync: false
