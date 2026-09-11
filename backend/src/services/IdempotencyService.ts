@@ -1,0 +1,112 @@
+import { PrismaClient, Email, EmailStatus } from '@prisma/client';
+import logger from '../utils/logger';
+
+const prisma = new PrismaClient();
+
+export class IdempotencyService {
+  /**
+   * Attempt to claim an email for processing using a DB-level state machine.
+   *
+   * State transitions:
+   *   SCHEDULED → PROCESSING  (worker claims it)
+   *   RATE_LIMITED → PROCESSING  (rescheduled job is being retried)
+   *   PROCESSING → (already locked by another worker — skip)
+   *   SENT → (already done — skip, this is a duplicate job execution)
+   *   FAILED → (terminal — skip unless explicitly retried)
+   *
+   * Uses SELECT ... FOR UPDATE NOWAIT so two concurrent workers never both
+   * process the same email — one wins the lock, the other gets an error and skips.
+   */
+  async claimForProcessing(emailId: string): Promise<Email | null> {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const emails = await tx.$queryRaw<Email[]>`
+          SELECT * FROM "Email" WHERE id = ${emailId}::uuid FOR UPDATE NOWAIT
+        `;
+
+        if (!emails || emails.length === 0) {
+          logger.warn({ emailId }, 'Email not found during idempotency check');
+          return null;
+        }
+
+        const email = emails[0];
+
+        // Already sent — this is a duplicate BullMQ execution (e.g., retry after crash)
+        if (email.status === EmailStatus.SENT) {
+          logger.info({ emailId }, 'Email already SENT — skipping duplicate job execution');
+          return null;
+        }
+
+        // Another worker is already processing this exact email
+        if (email.status === EmailStatus.PROCESSING) {
+          logger.warn({ emailId }, 'Email already PROCESSING — another worker claimed it');
+          return null;
+        }
+
+        // Terminal failure — do not retry automatically
+        if (email.status === EmailStatus.FAILED) {
+          logger.warn({ emailId }, 'Email is FAILED — skipping (manual retry needed)');
+          return null;
+        }
+
+        // Claim the email: SCHEDULED or RATE_LIMITED → PROCESSING
+        const updated = await tx.email.update({
+          where: { id: emailId },
+          data: {
+            status: EmailStatus.PROCESSING,
+            attempts: { increment: 1 },
+          },
+        });
+
+        logger.debug({ emailId, previousStatus: email.status }, 'Email claimed for processing');
+        return updated;
+      });
+    } catch (error: unknown) {
+      // PostgreSQL raises 55P03 when FOR UPDATE NOWAIT cannot acquire the lock
+      const pgErr = error as { code?: string; meta?: { code?: string } };
+      if (pgErr?.code === '55P03' || pgErr?.meta?.code === '55P03') {
+        logger.info({ emailId }, 'Email row locked by another worker — skipping');
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async markSent(emailId: string, messageId?: string): Promise<void> {
+    await prisma.email.update({
+      where: { id: emailId },
+      data: { status: EmailStatus.SENT, sentAt: new Date(), errorMessage: null },
+    });
+    logger.info({ emailId, messageId }, 'Email marked SENT');
+  }
+
+  async markFailed(emailId: string, errorMessage: string): Promise<void> {
+    await prisma.email.update({
+      where: { id: emailId },
+      data: { status: EmailStatus.FAILED, errorMessage },
+    });
+    logger.error({ emailId, errorMessage }, 'Email marked FAILED');
+  }
+
+  async markRateLimited(emailId: string, nextWindowAt: Date): Promise<void> {
+    await prisma.email.update({
+      where: { id: emailId },
+      data: { status: EmailStatus.RATE_LIMITED, scheduledAt: nextWindowAt },
+    });
+    logger.info({ emailId, nextWindowAt }, 'Email marked RATE_LIMITED, rescheduled');
+  }
+
+  async markScheduled(emailId: string, scheduledAt: Date, bullJobId?: string): Promise<void> {
+    await prisma.email.update({
+      where: { id: emailId },
+      data: {
+        status: EmailStatus.SCHEDULED,
+        scheduledAt,
+        bullJobId: bullJobId ?? undefined,
+        errorMessage: null,
+      },
+    });
+  }
+}
+
+export const idempotencyService = new IdempotencyService();
