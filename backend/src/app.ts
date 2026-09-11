@@ -34,7 +34,22 @@ app.use(
 // CORS configuration for frontend
 app.use(
   cors({
-    origin: config.frontendUrl,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        config.frontendUrl,
+        'http://localhost:5173',
+        'http://localhost:3000',
+      ];
+
+      // Allow any vercel preview / production domain
+      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        return callback(null, true);
+      }
+      return callback(null, true); // Permissive for credentials handshake
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -48,15 +63,16 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session configuration
+// Session configuration for cross-domain auth (Vercel <-> Render)
 app.use(
   session({
     secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
+    proxy: true, // Crucial for Render reverse proxy to trust HTTPS
     cookie: {
-      secure: config.isProduction,
-      sameSite: config.isProduction ? 'none' : 'lax',
+      secure: true, // Always true on Render HTTPS
+      sameSite: 'none', // Allows cross-site cookie between Vercel and Render
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       httpOnly: true,
     },

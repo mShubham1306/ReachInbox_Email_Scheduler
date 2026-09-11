@@ -23,7 +23,7 @@ function optionalInt(key: string, defaultValue: number): number {
 const config = {
   nodeEnv: optional('NODE_ENV', 'development'),
   port: optionalInt('PORT', 5000),
-  frontendUrl: optional('FRONTEND_URL', 'http://localhost:5173'),
+  frontendUrl: optional('FRONTEND_URL', 'http://localhost:5173').replace(/\/+$/, ''),
 
   databaseUrl: required('DATABASE_URL'),
   redisUrl: optional('REDIS_URL', 'redis://localhost:6379'),

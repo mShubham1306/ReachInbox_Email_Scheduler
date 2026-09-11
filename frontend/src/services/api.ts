@@ -12,11 +12,8 @@ import type {
   HealthStatus,
 } from '../types';
 
-// In production (Vercel), VITE_API_URL is set to the Render backend URL.
-// In local dev, it falls back to '/api' which Vite proxies to localhost:5000.
-const BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : '/api';
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+const BASE_URL = rawApiUrl ? `${rawApiUrl}/api` : '/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
