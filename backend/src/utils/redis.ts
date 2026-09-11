@@ -9,7 +9,9 @@ export function createRedisClient(): Redis {
   const client = new Redis(config.redisUrl, {
     maxRetriesPerRequest: null, // Required by BullMQ
     enableReadyCheck: false,
+    enableOfflineQueue: false,  // Fail fast when Redis is down
     lazyConnect: false,
+    connectTimeout: 10000,
     retryStrategy(times) {
       return Math.min(times * 1000, 5000);
     },

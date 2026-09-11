@@ -1,5 +1,5 @@
 import { Queue, QueueEvents } from 'bullmq';
-import { createRedisClient } from '../utils/redis';
+import { createRedisClient, getRedisClient } from '../utils/redis';
 import { JobData } from '../types';
 import logger from '../utils/logger';
 
@@ -21,8 +21,9 @@ export const emailQueue = new Queue<JobData>(QUEUE_NAME, {
   },
 });
 
+// Reuse the shared singleton instead of spawning a third connection
 export const emailQueueEvents = new QueueEvents(QUEUE_NAME, {
-  connection: createRedisClient(),
+  connection: getRedisClient(),
 });
 
 emailQueueEvents.on('error', () => {
