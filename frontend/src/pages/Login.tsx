@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Mail, Sparkles, ArrowRight, ShieldCheck, Chrome } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { GoogleAccountChooserModal } from '../components/GoogleAccountChooserModal';
 import { authApi } from '../services/api';
 
@@ -9,6 +10,10 @@ export function Login() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
+    if (errorParam) {
+      toast.error(`Sign in error: ${decodeURIComponent(errorParam)}`);
+    }
     if (params.get('setup_google') === 'true') {
       setModalMode('setup');
       setIsChooserOpen(true);

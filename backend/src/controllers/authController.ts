@@ -57,18 +57,22 @@ export function setupGoogleStrategy(clientId: string, clientSecret: string, call
                 },
               });
 
-              // Create a default sender for this user using Ethereal
-              await prisma.sender.create({
-                data: {
-                  userId: user.id,
-                  email: user.email,
-                  smtpHost: config.ethereal.host,
-                  smtpPort: config.ethereal.port,
-                  smtpUser: config.ethereal.user || 'test@ethereal.email',
-                  smtpPassword: config.ethereal.password || 'password',
-                  hourlyLimit: config.worker.defaultHourlyLimit,
-                },
-              });
+              // Safely attempt to create a default sender, but don't fail login if it fails
+              try {
+                await prisma.sender.create({
+                  data: {
+                    userId: user.id,
+                    email: user.email,
+                    smtpHost: config.ethereal.host || 'smtp.ethereal.email',
+                    smtpPort: config.ethereal.port || 587,
+                    smtpUser: config.ethereal.user || user.email,
+                    smtpPassword: config.ethereal.password || 'password',
+                    hourlyLimit: config.worker.defaultHourlyLimit || 100,
+                  },
+                });
+              } catch (senderErr) {
+                logger.warn({ senderErr }, 'Could not create default sender, continuing login');
+              }
             }
           }
 
@@ -236,16 +240,31 @@ export class AuthController {
 
   // Google OAuth callback
   googleCallback = (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate('google', {
-      failureRedirect: `${config.frontendUrl}/login?error=auth_failed`,
-    })(req, res, () => {
-      const user = req.user as any;
-      const token = user?.id ? generateAuthToken(user.id) : '';
-      const redirectUrl = token
-        ? `${config.frontendUrl}/dashboard?auth_token=${token}`
-        : `${config.frontendUrl}/dashboard`;
-      res.redirect(redirectUrl);
-    });
+    passport.authenticate('google', (err: any, user: any, info: any) => {
+      if (err) {
+        logger.error({ err }, 'Passport Google authentication error');
+        return res.redirect(`${config.frontendUrl}/login?error=${encodeURIComponent(err.message || 'auth_error')}`);
+      }
+
+      if (!user) {
+        logger.warn({ info }, 'No user returned from Google authentication');
+        return res.redirect(`${config.frontendUrl}/login?error=no_user`);
+      }
+
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          logger.error({ loginErr }, 'Error in req.login');
+          // Still generate token even if session store fails
+        }
+
+        const token = user.id ? generateAuthToken(user.id) : '';
+        const redirectUrl = token
+          ? `${config.frontendUrl}/dashboard?auth_token=${token}`
+          : `${config.frontendUrl}/dashboard`;
+
+        return res.redirect(redirectUrl);
+      });
+    })(req, res, next);
   };
 
   // Get current logged-in user details
