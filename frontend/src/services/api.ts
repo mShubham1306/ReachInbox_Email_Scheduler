@@ -15,26 +15,70 @@ import type {
 const rawApiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 const BASE_URL = rawApiUrl ? `${rawApiUrl}/api` : '/api';
 
+const TOKEN_KEY = 'reachinbox_auth_token';
+
+export function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  // First check if token is in current URL (just redirected back from Google OAuth)
+  const params = new URLSearchParams(window.location.search);
+  const urlToken = params.get('auth_token');
+  if (urlToken) {
+    localStorage.setItem(TOKEN_KEY, urlToken);
+    // Clean URL without reloading
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+    return urlToken;
+  }
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setStoredToken(token: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+}
+
+export function removeStoredToken(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
+
 const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Attach Authorization Bearer token to all outgoing requests
+api.interceptors.request.use((reqConfig) => {
+  const token = getStoredToken();
+  if (token) {
+    reqConfig.headers.Authorization = `Bearer ${token}`;
+  }
+  return reqConfig;
+});
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export const authApi = {
   me: async (): Promise<User | null> => {
     try {
+      // Ensure any auth_token in URL is captured first
+      getStoredToken();
       const res = await api.get<ApiResponse<User>>('/auth/me');
       return res.data.data ?? null;
     } catch (err: any) {
       if (err?.response?.status === 401) {
+        removeStoredToken();
         return null;
       }
       return null;
     }
   },
-  logout: () => api.post('/auth/logout'),
+  logout: () => {
+    removeStoredToken();
+    return api.post('/auth/logout');
+  },
   devLogin: (email?: string, name?: string) =>
     api.post<ApiResponse<User>>('/auth/dev-login', { email, name }).then((r) => r.data.data!),
   getGoogleStatus: () =>

@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import config from '../config';
 import logger from '../utils/logger';
+import { generateAuthToken, verifyAuthToken } from '../utils/token';
 
 const prisma = new PrismaClient();
 
@@ -238,17 +239,36 @@ export class AuthController {
     passport.authenticate('google', {
       failureRedirect: `${config.frontendUrl}/login?error=auth_failed`,
     })(req, res, () => {
-      res.redirect(`${config.frontendUrl}/dashboard`);
+      const user = req.user as any;
+      const token = user?.id ? generateAuthToken(user.id) : '';
+      const redirectUrl = token
+        ? `${config.frontendUrl}/dashboard?auth_token=${token}`
+        : `${config.frontendUrl}/dashboard`;
+      res.redirect(redirectUrl);
     });
   };
 
   // Get current logged-in user details
   getMe = async (req: Request, res: Response) => {
-    if (!req.isAuthenticated() || !req.user) {
+    let user = req.user as any;
+
+    // If session cookie is blocked across domains, verify Bearer token from header
+    if (!user && req.headers.authorization?.startsWith('Bearer ')) {
+      const token = req.headers.authorization.substring(7).trim();
+      const userId = verifyAuthToken(token);
+      if (userId) {
+        try {
+          user = await prisma.user.findUnique({ where: { id: userId } });
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!user) {
       return res.status(401).json({ success: false, error: 'Not authenticated' });
     }
 
-    const user = req.user as any;
     try {
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
