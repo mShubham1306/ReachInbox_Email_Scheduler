@@ -15,20 +15,9 @@ export function Login() {
     }
   }, []);
 
-  const handleGoogleClick = async () => {
-    try {
-      const status = await authApi.getGoogleStatus();
-      if (status.isConfigured) {
-        // Officially configured! Open Google's native accounts.google.com chooser
-        window.location.href = '/auth/google';
-      } else {
-        setModalMode('setup');
-        setIsChooserOpen(true);
-      }
-    } catch {
-      setModalMode('setup');
-      setIsChooserOpen(true);
-    }
+  const handleGoogleClick = () => {
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    window.location.href = `${apiBase}/auth/google`;
   };
 
   return (

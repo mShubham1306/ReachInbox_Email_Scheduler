@@ -25,19 +25,9 @@ export function LandingPage() {
   const [modalMode, setModalMode] = useState<'official' | 'setup' | 'direct'>('official');
   const [activeTab, setActiveTab] = useState<'scheduler' | 'ratelimit' | 'throttle' | 'idempotency'>('scheduler');
 
-  const handleGoogleClick = async () => {
-    try {
-      const status = await authApi.getGoogleStatus();
-      if (status.isConfigured) {
-        window.location.href = '/auth/google';
-      } else {
-        setModalMode('setup');
-        setIsGoogleModalOpen(true);
-      }
-    } catch {
-      setModalMode('setup');
-      setIsGoogleModalOpen(true);
-    }
+  const handleGoogleClick = () => {
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    window.location.href = `${apiBase}/auth/google`;
   };
 
   return (
