@@ -63,16 +63,16 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session configuration for cross-domain auth (Vercel <-> Render)
+// Session configuration — dev: lax/http, prod: none/https (cross-domain Vercel↔Render)
 app.use(
   session({
     secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
-    proxy: true, // Crucial for Render reverse proxy to trust HTTPS
+    proxy: config.isProduction, // Only trust proxy in production (Render)
     cookie: {
-      secure: true, // Always true on Render HTTPS
-      sameSite: 'none', // Allows cross-site cookie between Vercel and Render
+      secure: config.isProduction,  // HTTPS only in prod; allows HTTP in local dev
+      sameSite: config.isProduction ? 'none' : 'lax', // cross-site in prod, lax locally
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       httpOnly: true,
     },

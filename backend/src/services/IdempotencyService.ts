@@ -37,10 +37,22 @@ export class IdempotencyService {
           return null;
         }
 
-        // Another worker is already processing this exact email
+        // Another worker claimed it — check if the lease has expired (stale job from crashed worker)
         if (email.status === EmailStatus.PROCESSING) {
-          logger.warn({ emailId }, 'Email already PROCESSING — another worker claimed it');
-          return null;
+          const LEASE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes lease
+          const isStale =
+            email.processingStartedAt &&
+            Date.now() - new Date(email.processingStartedAt).getTime() > LEASE_TIMEOUT_MS;
+
+          if (!isStale) {
+            logger.warn({ emailId }, 'Email already PROCESSING — active worker lease in progress');
+            return null;
+          }
+
+          logger.warn(
+            { emailId, processingStartedAt: email.processingStartedAt },
+            'Detected stale PROCESSING lease (>5 min) from crashed worker — recovering job',
+          );
         }
 
         // Terminal failure — do not retry automatically
@@ -49,12 +61,15 @@ export class IdempotencyService {
           return null;
         }
 
-        // Claim the email: SCHEDULED or RATE_LIMITED → PROCESSING
+        // Claim the email: SCHEDULED, RATE_LIMITED, or Stale PROCESSING → PROCESSING
+        const now = new Date();
         const updated = await tx.email.update({
           where: { id: emailId },
           data: {
             status: EmailStatus.PROCESSING,
             attempts: { increment: 1 },
+            processingStartedAt: now,
+            lastAttemptAt: now,
           },
         });
 
@@ -75,7 +90,13 @@ export class IdempotencyService {
   async markSent(emailId: string, messageId?: string): Promise<void> {
     await prisma.email.update({
       where: { id: emailId },
-      data: { status: EmailStatus.SENT, sentAt: new Date(), errorMessage: null },
+      data: {
+        status: EmailStatus.SENT,
+        sentAt: new Date(),
+        processingStartedAt: null,
+        messageId: messageId ?? null,
+        errorMessage: null,
+      },
     });
     logger.info({ emailId, messageId }, 'Email marked SENT');
   }
@@ -83,7 +104,11 @@ export class IdempotencyService {
   async markFailed(emailId: string, errorMessage: string): Promise<void> {
     await prisma.email.update({
       where: { id: emailId },
-      data: { status: EmailStatus.FAILED, errorMessage },
+      data: {
+        status: EmailStatus.FAILED,
+        processingStartedAt: null,
+        errorMessage,
+      },
     });
     logger.error({ emailId, errorMessage }, 'Email marked FAILED');
   }
@@ -91,7 +116,11 @@ export class IdempotencyService {
   async markRateLimited(emailId: string, nextWindowAt: Date): Promise<void> {
     await prisma.email.update({
       where: { id: emailId },
-      data: { status: EmailStatus.RATE_LIMITED, scheduledAt: nextWindowAt },
+      data: {
+        status: EmailStatus.RATE_LIMITED,
+        scheduledAt: nextWindowAt,
+        processingStartedAt: null,
+      },
     });
     logger.info({ emailId, nextWindowAt }, 'Email marked RATE_LIMITED, rescheduled');
   }
@@ -103,6 +132,7 @@ export class IdempotencyService {
         status: EmailStatus.SCHEDULED,
         scheduledAt,
         bullJobId: bullJobId ?? undefined,
+        processingStartedAt: null,
         errorMessage: null,
       },
     });

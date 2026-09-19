@@ -28,6 +28,16 @@ export interface ScheduleEmailsResult {
 export class EmailSchedulingService {
   async scheduleEmails(input: ScheduleEmailsInput): Promise<ScheduleEmailsResult> {
     const { userId, senderId, subject, body, recipients, startTime, delayMs, hourlyLimit } = input;
+    logger.info({ userId, senderId }, 'Verifying sender ownership');
+
+    // 0. Verify sender ownership — ensure the authenticated user owns this sender
+    const sender = await prisma.sender.findFirst({
+      where: { id: senderId, userId },
+    });
+
+    if (!sender) {
+      throw new Error(`Unauthorized: Sender ${senderId} not found or does not belong to user ${userId}`);
+    }
 
     // 1. Create campaign record
     const campaign = await campaignService.create({

@@ -39,37 +39,11 @@ export class EmailController {
         data: result,
       });
     } catch (schedErr: any) {
-      logger.warn({ schedErr }, 'Queue scheduling falling back to direct live dispatch');
-      
-      // Perform live SMTP delivery directly so emails actually send
-      const directDispatches = [];
-      for (const to of body.recipients.slice(0, 50)) {
-        try {
-          const sent = await smtpService.sendEmail({
-            to,
-            subject: body.subject,
-            body: body.body,
-            fromLabel: 'ReachInbox Outreach',
-          });
-          directDispatches.push({ to, messageId: sent.messageId, previewUrl: sent.previewUrl });
-        } catch (sendErr) {
-          logger.error({ sendErr, to }, 'Live SMTP send failed');
-        }
-      }
-
-      return res.status(201).json({
-        success: true,
-        data: {
-          campaignId: `camp-${Date.now()}`,
-          totalRecipients: body.recipients.length,
-          scheduledEmails: body.recipients.length,
-          firstEmailScheduledAt: new Date(body.startTime),
-          lastEmailScheduledAt: new Date(body.startTime),
-          liveDelivered: directDispatches,
-          message: directDispatches.length > 0 
-            ? `Successfully dispatched ${directDispatches.length} emails live via SMTP!` 
-            : 'Emails enqueued successfully',
-        },
+      logger.error({ schedErr, userId: user.id }, 'Campaign queue scheduling failed');
+      const isAuthErr = schedErr.message?.includes('Unauthorized');
+      return res.status(isAuthErr ? 403 : 500).json({
+        success: false,
+        error: schedErr.message || 'Failed to schedule campaign jobs in queue. Please try again.',
       });
     }
   };
@@ -124,6 +98,7 @@ export class EmailController {
 
   // GET /api/emails/search?q=
   search = async (req: Request, res: Response) => {
+    const user = req.user as any;
     const query = (req.query.q as string) || '';
     const status = req.query.status as string | undefined;
     const senderId = req.query.senderId as string | undefined;

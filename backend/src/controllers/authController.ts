@@ -86,6 +86,16 @@ export function setupGoogleStrategy(clientId: string, clientSecret: string, call
   );
 }
 
+// Helper: check if Google credentials are real (not placeholder/test values)
+function isRealGoogleClientId(id: string): boolean {
+  if (!id) return false;
+  if (id === 'placeholder-google-client-id') return false;
+  if (id.startsWith('123456789')) return false;            // obvious test ID
+  if (id === 'test-client-id') return false;
+  // Real Google OAuth client IDs are long numeric strings ending with .apps.googleusercontent.com
+  return id.includes('.apps.googleusercontent.com') && id.length > 40;
+}
+
 if (config.google.clientId && config.google.clientSecret) {
   setupGoogleStrategy(config.google.clientId, config.google.clientSecret, config.google.callbackUrl);
 }
@@ -119,11 +129,7 @@ passport.deserializeUser(async (id: string, done) => {
 export class AuthController {
   // Initiates Google OAuth with account selection
   googleAuth = async (req: Request, res: Response, next: NextFunction) => {
-    const isConfigured = Boolean(
-      config.google.clientId && 
-      config.google.clientSecret && 
-      config.google.clientId !== 'placeholder-google-client-id'
-    );
+    const isConfigured = isRealGoogleClientId(config.google.clientId) && Boolean(config.google.clientSecret);
 
     if (!isConfigured) {
       const selectedEmail = (req.query?.email as string) || undefined;
@@ -186,11 +192,7 @@ export class AuthController {
 
   // Check whether official Google OAuth credentials are ready
   getGoogleStatus = async (_req: Request, res: Response) => {
-    const isConfigured = Boolean(
-      config.google.clientId && 
-      config.google.clientSecret && 
-      config.google.clientId !== 'placeholder-google-client-id'
-    );
+    const isConfigured = isRealGoogleClientId(config.google.clientId) && Boolean(config.google.clientSecret);
     return res.json({
       success: true,
       isConfigured,

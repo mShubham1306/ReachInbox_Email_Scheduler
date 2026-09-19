@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { campaignService } from '../services/CampaignService';
+import { encrypt } from '../utils/encryption';
 
 const prisma = new PrismaClient();
 
@@ -36,6 +37,17 @@ export class CampaignController {
     try {
       const senders = await prisma.sender.findMany({
         where: { userId: user.id },
+        select: {
+          id: true,
+          userId: true,
+          email: true,
+          smtpHost: true,
+          smtpPort: true,
+          smtpUser: true,
+          hourlyLimit: true,
+          createdAt: true,
+          updatedAt: true,
+        },
         orderBy: { createdAt: 'asc' },
       });
       if (senders.length > 0) {
@@ -73,6 +85,7 @@ export class CampaignController {
     const port = smtpPort ? parseInt(smtpPort, 10) : (email.includes('gmail') ? 465 : 587);
 
     try {
+      const encryptedPassword = encrypt(smtpPassword);
       const sender = await prisma.sender.create({
         data: {
           userId: user.id,
@@ -80,12 +93,14 @@ export class CampaignController {
           smtpHost: host,
           smtpPort: port,
           smtpUser,
-          smtpPassword,
+          smtpPassword: encryptedPassword,
           hourlyLimit: hourlyLimit ? parseInt(hourlyLimit, 10) : 100,
         },
       });
 
-      return res.status(201).json({ success: true, data: sender });
+      // Omit encrypted password from JSON response
+      const { smtpPassword: _, ...safeSender } = sender;
+      return res.status(201).json({ success: true, data: safeSender });
     } catch {
       const mockSender = {
         id: `sender-${Date.now()}`,
@@ -94,7 +109,6 @@ export class CampaignController {
         smtpHost: host,
         smtpPort: port,
         smtpUser,
-        smtpPassword,
         hourlyLimit: hourlyLimit ? parseInt(hourlyLimit, 10) : 100,
       };
       return res.status(201).json({ success: true, data: mockSender });

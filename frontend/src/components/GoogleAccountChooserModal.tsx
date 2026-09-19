@@ -60,8 +60,10 @@ export function GoogleAccountChooserModal({ isOpen, onClose, defaultMode }: Goog
 
   if (!isOpen) return null;
 
+  const getApiBase = () => (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
   const handleLaunchOfficialGoogle = () => {
-    window.location.href = '/auth/google';
+    window.location.href = `${getApiBase()}/auth/google`;
   };
 
   const handleSaveGoogleConfig = async (e: React.FormEvent) => {
@@ -75,7 +77,10 @@ export function GoogleAccountChooserModal({ isOpen, onClose, defaultMode }: Goog
     try {
       const res = await authApi.configureGoogle(clientId.trim(), clientSecret.trim());
       toast.success(res.message || 'Google Cloud OAuth credentials saved!');
-      window.location.href = res.authUrl || '/auth/google';
+      const targetUrl = res.authUrl 
+        ? (res.authUrl.startsWith('http') ? res.authUrl : `${getApiBase()}${res.authUrl}`)
+        : `${getApiBase()}/auth/google`;
+      window.location.href = targetUrl;
     } catch (err: any) {
       toast.error(err?.response?.data?.error || 'Failed to activate Google OAuth');
       setIsSavingConfig(false);
@@ -101,7 +106,7 @@ export function GoogleAccountChooserModal({ isOpen, onClose, defaultMode }: Goog
           window.location.href = '/dashboard';
         },
         onError: () => {
-          window.location.href = `/auth/google?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
+          window.location.href = `${getApiBase()}/auth/google?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
         },
       }
     );

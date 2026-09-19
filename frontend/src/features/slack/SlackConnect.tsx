@@ -56,7 +56,7 @@ export function SlackConnect({ status }: SlackConnectProps) {
         </div>
       </div>
       <a
-        href="/auth/slack/connect"
+        href={slackApi.getConnectUrl()}
         className="flex items-center gap-1.5 text-xs bg-[#4A154B] text-white px-3 py-1.5 rounded-lg hover:bg-[#611f69] transition-colors font-medium"
       >
         <ExternalLink className="w-3.5 h-3.5" />

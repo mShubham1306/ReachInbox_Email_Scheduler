@@ -25,12 +25,21 @@ export class SMTPService {
       (opts.smtpUser && opts.smtpUser.toLowerCase().includes('gmail'));
     const isPort465 = opts.smtpPort === 465;
 
+    const user = opts.smtpUser || config.ethereal.user;
+    const pass = opts.smtpPassword || config.ethereal.password;
+
+    if (!user || !pass) {
+      throw new Error(
+        'SMTP credentials not found. Please provide valid SMTP credentials or configure ETHEREAL_USER and ETHEREAL_PASSWORD.',
+      );
+    }
+
     if (isGmail) {
       return nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: opts.smtpUser,
-          pass: opts.smtpPassword,
+          user,
+          pass,
         },
       });
     }
@@ -40,11 +49,11 @@ export class SMTPService {
       port: opts.smtpPort || (isPort465 ? 465 : config.ethereal.port),
       secure: isPort465,
       auth: {
-        user: opts.smtpUser || config.ethereal.user || 'kwu6himo75hmpqsb@ethereal.email',
-        pass: opts.smtpPassword || config.ethereal.password || 'sG53JwSuvh2k2m1WtT',
+        user,
+        pass,
       },
       tls: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: config.isProduction ? true : false,
       },
     });
   }

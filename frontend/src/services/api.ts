@@ -155,8 +155,10 @@ export const slackApi = {
       .get<ApiResponse<{ connected: boolean; teamName?: string }>>('/slack/status')
       .then((r) => r.data.data!),
   disconnect: () => api.post('/slack/disconnect'),
-  // Connect initiates a redirect — done via window.location, not Axios
-  getConnectUrl: () => '/auth/slack/connect',
+  getConnectUrl: () => {
+    const rawApi = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+    return `${rawApi}/auth/slack/connect`;
+  },
 };
 
 // ─── Health ──────────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import { smtpService } from '../../services/SMTPService';
 import { searchIndexService } from '../../services/SearchIndexService';
 import { notificationService } from '../../services/NotificationService';
 import { addEmailJob } from '../../queues/emailQueue';
+import { decrypt } from '../../utils/encryption';
 import logger from '../../utils/logger';
 
 const prisma = new PrismaClient();
@@ -79,13 +80,14 @@ export async function processEmailJob(job: Job<JobData>): Promise<void> {
     await throttleService.waitForSlot(allowedAt);
 
     // ── Step 5: Send the email via SMTP ───────────────────────────────────
+    const decryptedPassword = decrypt(sender.smtpPassword);
     const result = await smtpService.sendEmail({
       to: email.recipient,
       subject: email.subject,
       body: email.body,
       fromLabel: 'ReachInbox',
       smtpUser: sender.smtpUser,
-      smtpPassword: sender.smtpPassword,
+      smtpPassword: decryptedPassword,
       smtpHost: sender.smtpHost,
       smtpPort: sender.smtpPort,
     });
