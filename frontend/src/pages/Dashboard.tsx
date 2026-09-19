@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Header } from '../components/Header';
 import { Tabs } from '../components/Tabs';
@@ -8,15 +8,7 @@ import { ScheduledEmailsTab } from '../features/emails/ScheduledEmailsTab';
 import { SentEmailsTab } from '../features/emails/SentEmailsTab';
 import { SlackConnect } from '../features/slack/SlackConnect';
 import { senderApi, slackApi, emailApi } from '../services/api';
-import { 
-  Clock, 
-  CheckCircle2, 
-  Sliders, 
-  ExternalLink, 
-  Mail, 
-  Send,
-  Zap
-} from 'lucide-react';
+import { Clock, CheckCircle2, Mail, Send, Zap } from 'lucide-react';
 
 type ActiveTab = 'scheduled' | 'sent';
 
@@ -57,50 +49,37 @@ export function Dashboard() {
       <Header user={user} onLogout={logout} onCompose={() => setIsComposeOpen(true)} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {/* Real-time System Metrics Bar */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="glass-card p-5 rounded-2xl border border-white/5">
             <div className="flex items-center justify-between text-slate-400 mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider">BullMQ Delayed Jobs</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Emails Queued</span>
               <Clock className="w-4 h-4 text-blue-400" />
             </div>
             <div className="text-2xl font-bold text-white">{scheduledCount}</div>
             <div className="flex items-center gap-1.5 text-xs text-blue-400 mt-1 font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              In-flight Queue
+              Waiting to send
             </div>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-white/5">
             <div className="flex items-center justify-between text-slate-400 mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider">Dispatched Emails</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Emails Sent</span>
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="text-2xl font-bold text-emerald-400">{sentCount}</div>
-            <div className="text-xs text-slate-400 mt-1">
-              Indexed in Elasticsearch
-            </div>
+            <div className="text-xs text-slate-400 mt-1">Successfully delivered</div>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-white/5">
             <div className="flex items-center justify-between text-slate-400 mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider">Active Mailboxes</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Email Accounts</span>
               <Mail className="w-4 h-4 text-purple-400" />
             </div>
             <div className="text-2xl font-bold text-white">{Math.max(1, senders.length)}</div>
-            <div className="text-xs text-purple-400 mt-1">
-              Ethereal Fake SMTP
-            </div>
-          </div>
-
-          <div className="glass-card p-5 rounded-2xl border border-white/5">
-            <div className="flex items-center justify-between text-slate-400 mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider">Inter-Email Throttle</span>
-              <Sliders className="w-4 h-4 text-amber-400" />
-            </div>
-            <div className="text-2xl font-bold text-white">2.0s</div>
-            <div className="text-xs text-amber-400 mt-1">
-              Redis slot protection
+            <div className="text-xs text-slate-400 mt-1">
+              {senders.length === 0 ? 'Add a sender to start' : 'Connected senders'}
             </div>
           </div>
         </div>
@@ -108,7 +87,7 @@ export function Dashboard() {
         {/* Slack Connection Banner */}
         <SlackConnect status={slackStatus} />
 
-        {/* Primary Outreach Workspace Card */}
+        {/* Main Workspace */}
         <div className="glass-card rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
           {/* Header toolbar */}
           <div className="px-6 pt-6 pb-0 border-b border-white/5">
@@ -116,40 +95,27 @@ export function Dashboard() {
               <div>
                 <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                   <Send className="w-5 h-5 text-brand-400" />
-                  Email Outreach Pipeline
+                  Your Campaigns
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Real-time synchronization between BullMQ delayed queues, Redis rate limiters, and Elasticsearch.
+                  All your scheduled and sent emails in one place
                 </p>
               </div>
 
-              <div className="flex items-center gap-2.5">
-                <a
-                  href="https://ethereal.email/messages"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white glass-card px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-all"
-                >
-                  <Mail className="w-3.5 h-3.5 text-brand-400" />
-                  Ethereal Inbox
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-
-                <button
-                  onClick={() => setIsComposeOpen(true)}
-                  className="btn-shimmer inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-600 hover:to-indigo-700 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-lg shadow-brand-500/25 transition-all active:scale-95"
-                >
-                  <Zap className="w-4 h-4" />
-                  Compose Campaign
-                </button>
-              </div>
+              <button
+                onClick={() => setIsComposeOpen(true)}
+                className="btn-shimmer inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-600 hover:to-indigo-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all active:scale-95"
+              >
+                <Zap className="w-4 h-4" />
+                New Campaign
+              </button>
             </div>
 
             {/* Tabs */}
             <Tabs
               tabs={[
-                { id: 'scheduled', label: 'Scheduled & In-Flight', count: scheduledCount },
-                { id: 'sent', label: 'Sent & Searchable (Elasticsearch)', count: sentCount },
+                { id: 'scheduled', label: 'Scheduled & Sending', count: scheduledCount },
+                { id: 'sent', label: 'Sent', count: sentCount },
               ]}
               activeTab={activeTab}
               onChange={(id) => setActiveTab(id as ActiveTab)}

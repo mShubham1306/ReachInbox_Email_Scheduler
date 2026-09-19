@@ -1,4 +1,4 @@
-import { LogOut, Mail, ExternalLink, Activity, Home } from 'lucide-react';
+﻿import { LogOut, Mail, Home } from 'lucide-react';
 import type { User } from '../types';
 
 interface HeaderProps {
@@ -34,17 +34,7 @@ export function Header({ user, onLogout, onCompose }: HeaderProps) {
             Landing
           </a>
 
-          {/* Bull Board link */}
-          <a
-            href="/admin/queues"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-400 font-medium transition-colors glass-card px-3 py-1.5 rounded-xl border border-white/5"
-          >
-            <Activity className="w-3.5 h-3.5 text-emerald-400" />
-            Queue Dashboard
-            <ExternalLink className="w-3 h-3" />
-          </a>
+
 
           {/* Compose button */}
           <button
@@ -52,7 +42,7 @@ export function Header({ user, onLogout, onCompose }: HeaderProps) {
             className="btn-shimmer bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-600 hover:to-indigo-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2 rounded-xl shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2 active:scale-95"
           >
             <Mail className="w-4 h-4" />
-            <span>Compose</span>
+            <span>New Campaign</span>
           </button>
 
           {/* User avatar + info */}
@@ -85,3 +75,4 @@ export function Header({ user, onLogout, onCompose }: HeaderProps) {
     </header>
   );
 }
+

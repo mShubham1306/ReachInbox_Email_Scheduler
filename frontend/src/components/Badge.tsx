@@ -1,4 +1,4 @@
-import { clsx } from 'clsx';
+﻿import { clsx } from 'clsx';
 import type { EmailStatus } from '../types';
 
 type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | EmailStatus;
@@ -18,11 +18,11 @@ const variantStyles: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
-  SCHEDULED: 'Scheduled',
-  PROCESSING: 'Processing',
-  SENT: 'Sent',
-  FAILED: 'Failed',
-  RATE_LIMITED: 'Rate Limited',
+  SCHEDULED: 'Queued',
+  PROCESSING: 'Sending now',
+  SENT: 'Delivered',
+  FAILED: 'Failed to send',
+  RATE_LIMITED: 'Paused (limit reached)',
 };
 
 interface BadgeProps {
@@ -51,3 +51,4 @@ export function Badge({ variant = 'default', children, className }: BadgeProps) 
 export function StatusBadge({ status }: { status: EmailStatus }) {
   return <Badge variant={status} />;
 }
+

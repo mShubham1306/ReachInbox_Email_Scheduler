@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Modal } from '../../components/Modal';
 import { Input, Textarea } from '../../components/Input';
@@ -47,14 +47,14 @@ interface FormState {
 
 const TEMPLATES = [
   {
-    name: '🎯 Outreach Demo',
+    name: 'ðŸŽ¯ Outreach Demo',
     subject: 'Quick question about {{company}} outbound outreach',
-    body: `Hi there,\n\nI noticed you're scaling your team and wanted to see how you're currently handling cold email deliverability at scale.\n\nAt ReachInbox, we help outbound teams schedule thousands of personalized emails with persistent BullMQ queuing and zero-drop guarantees.\n\nOpen to a quick 5-min chat this Thursday?\n\nBest,\nReachInbox Outreach Team`,
+    body: `Hi there,\n\nI noticed you're scaling your team and wanted to see how you're currently handling cold email deliverability at scale.\n\nAt ReachInbox, we help teams send thousands of personalized emails automatically, at the right time.\n\nOpen to a quick 5-min chat this Thursday?\n\nBest,\nReachInbox Outreach Team`,
   },
   {
-    name: '⚡ Real Email Test',
+    name: 'âš¡ Real Email Test',
     subject: 'Live ReachInbox Test: Real Email Delivery',
-    body: `Hello,\n\nThis is a real outbound message dispatched live through the ReachInbox Email Scheduler.\n\nIf you received this in your actual inbox, the real SMTP delivery pipeline and BullMQ queue are working perfectly.\n\nTimestamp: ${new Date().toLocaleString()}\nReachInbox Engineering`,
+    body: `Hello,\n\nThis is a real outbound message dispatched live through the ReachInbox Email Scheduler.\n\nIf you received this in your actual inbox, the email delivery system is working perfectly.\n\nTimestamp: ${new Date().toLocaleString()}\nReachInbox Engineering`,
   },
 ];
 
@@ -118,7 +118,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
         messageId: res.messageId,
         previewUrl: res.previewUrl,
       });
-      toast.success(`🚀 Real test email dispatched to ${targetEmail}!`);
+      toast.success(`ðŸš€ Real test email dispatched to ${targetEmail}!`);
     } catch (err: any) {
       toast.error(err?.response?.data?.error || 'Failed to dispatch test email');
     } finally {
@@ -139,7 +139,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
         setParsedLeads({ valid: data.valid, invalid: data.invalid, duplicatesRemoved: data.duplicatesRemoved });
         toast.success(`${data.valid.length} valid leads detected from file`);
       },
-      onError: () => toast.error('Could not parse file — check format'),
+      onError: () => toast.error('Could not parse file â€” check format'),
     });
   };
 
@@ -152,7 +152,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
     setParsedLeads((prev) => {
       const existing = prev?.valid ?? [];
       if (existing.includes(email)) {
-        toast('Email is already in recipient list', { icon: 'ℹ️' });
+        toast('Email is already in recipient list', { icon: 'â„¹ï¸' });
         return prev;
       }
       return {
@@ -212,12 +212,12 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
         onSuccess: (result: any) => {
           if (result?.liveDelivered?.length > 0) {
             toast.success(
-              `🚀 Dispatched live to ${result.liveDelivered.length} real email addresses!`,
+              `ðŸš€ Dispatched live to ${result.liveDelivered.length} real email addresses!`,
               { duration: 6000 }
             );
           } else {
             toast.success(
-              `✅ ${result.scheduledEmails} emails queued into BullMQ!`,
+              `âœ… ${result.scheduledEmails} emails queued into BullMQ!`,
               { duration: 5000 }
             );
           }
@@ -234,7 +234,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
     setForm((f) => ({ ...f, [field]: e.target.type === 'number' ? Number(e.target.value) : e.target.value }));
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Compose Email Campaign" size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Create New Campaign" size="xl">
       <form onSubmit={handleSubmit} className="space-y-5 text-slate-800 dark:text-slate-200">
         {/* Quick Templates Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
@@ -281,7 +281,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
                 rel="noreferrer" 
                 className="text-brand-500 hover:underline flex items-center gap-1 font-medium text-[11px]"
               >
-                Get Gmail App Password →
+                Get Gmail App Password â†’
               </a>
             </div>
             <p className="text-slate-500 dark:text-slate-400">
@@ -338,12 +338,12 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
           >
             {senders.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.email} • {s.smtpHost.includes('gmail') ? 'Real Gmail SMTP' : 'Ethereal Test SMTP'} ({s.hourlyLimit} emails/hr quota)
+                {s.email} â€¢ {s.smtpHost.includes('gmail') ? 'Real Gmail SMTP' : 'Default SMTP'} ({s.hourlyLimit} emails/hr quota)
               </option>
             ))}
             {senders.length === 0 && (
               <option value="11111111-2222-3333-4444-555555555555">
-                demo@reachinbox.ai • Ethereal Test SMTP (100 emails/hr quota)
+                demo@reachinbox.ai â€¢ Default SMTP (100 emails/hr quota)
               </option>
             )}
           </select>
@@ -405,7 +405,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
                     title="Click to remove"
                   >
                     {email}
-                    <span className="text-slate-400 hover:text-red-500 font-bold">×</span>
+                    <span className="text-slate-400 hover:text-red-500 font-bold">Ã—</span>
                   </span>
                 ))}
               </div>
@@ -444,7 +444,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
         <div className="p-4 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Dispatch Mode
+              When to send
             </span>
             <div className="flex gap-1 p-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
               <button
@@ -501,7 +501,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
             )}
 
             <Input
-              label="Inter-Email Delay (ms)"
+              label="Delay between emails (ms)"
               type="number"
               min={500}
               step={500}
@@ -510,7 +510,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
             />
 
             <Input
-              label="Hourly Sender Limit"
+              label="Max emails per hour"
               type="number"
               min={1}
               max={5000}
@@ -547,7 +547,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            <span>BullMQ idempotency guaranteed</span>
+            <span>Reliable delivery — no duplicate sends</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -559,7 +559,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
               className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 text-xs flex items-center gap-1.5"
             >
               <Zap className="w-3.5 h-3.5 text-emerald-500" />
-              {isSendingTest ? 'Delivering...' : '1-Click Live Test Send'}
+              {isSendingTest ? 'Sending...' : 'Send Test Email'}
             </Button>
             <Button type="button" variant="secondary" onClick={onClose} className="text-xs">
               Cancel
@@ -569,7 +569,7 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
               isLoading={isScheduling}
               className="bg-brand-500 hover:bg-brand-600 text-white font-bold shadow-lg shadow-brand-500/25 px-5 text-xs"
             >
-              {isScheduling ? 'Dispatching...' : `Send to ${parsedLeads?.valid.length ?? 0} Recipient(s)`}
+              {isScheduling ? 'Scheduling...' : `Send to ${parsedLeads?.valid.length ?? 0} Recipient(s)`}
             </Button>
           </div>
         </div>
@@ -577,3 +577,4 @@ export function ComposeEmailModal({ isOpen, onClose, senders }: ComposeEmailModa
     </Modal>
   );
 }
+

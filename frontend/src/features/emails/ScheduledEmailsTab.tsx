@@ -1,6 +1,6 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { format } from 'date-fns';
-import { Search, Clock, Mail, ExternalLink, ShieldCheck, X } from 'lucide-react';
+import { Search, Mail, X } from 'lucide-react';
 import { useScheduledEmails } from '../../hooks/useEmails';
 import { StatusBadge } from '../../components/Badge';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -32,7 +32,7 @@ export function ScheduledEmailsTab() {
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Filter scheduled queue by recipient or subject..."
+          placeholder="Search by recipient or subject..."
           className="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-white placeholder:text-slate-500"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -42,7 +42,7 @@ export function ScheduledEmailsTab() {
       {filtered.length === 0 ? (
         <EmptyState
           title="No scheduled emails in queue"
-          description="Click Compose Campaign to queue delayed outreach emails into BullMQ."
+          description="Click New Campaign to schedule your first email."
         />
       ) : (
         <>
@@ -50,10 +50,10 @@ export function ScheduledEmailsTab() {
             <table className="w-full text-sm">
               <thead className="bg-slate-900/80 border-b border-white/5 text-xs uppercase tracking-wider text-slate-400">
                 <tr>
-                  <th className="text-left px-5 py-3.5 font-semibold">Recipient Lead</th>
+                  <th className="text-left px-5 py-3.5 font-semibold">Recipient</th>
                   <th className="text-left px-5 py-3.5 font-semibold hidden sm:table-cell">Subject</th>
                   <th className="text-left px-5 py-3.5 font-semibold">Scheduled Time</th>
-                  <th className="text-left px-5 py-3.5 font-semibold">BullMQ Status</th>
+                  <th className="text-left px-5 py-3.5 font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -121,7 +121,7 @@ export function ScheduledEmailsTab() {
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <Mail className="w-5 h-5 text-brand-400" />
-                <h3 className="font-bold text-white text-base">Queued Job Details</h3>
+                <h3 className="font-bold text-white text-base">Email Details</h3>
               </div>
               <button 
                 onClick={() => setSelectedEmail(null)}
@@ -151,12 +151,7 @@ export function ScheduledEmailsTab() {
                   <span className="text-slate-500">Status:</span>
                   <StatusBadge status={selectedEmail.status} />
                 </div>
-                {selectedEmail.bullJobId && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">BullMQ Job ID:</span>
-                    <span className="font-mono text-slate-400">{selectedEmail.bullJobId}</span>
-                  </div>
-                )}
+
               </div>
 
               <div>
@@ -166,21 +161,7 @@ export function ScheduledEmailsTab() {
                 </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-between text-slate-400">
-                <div className="flex items-center gap-1.5 text-[11px]">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  Idempotent state lock protected
-                </div>
-                <a
-                  href="/admin/queues"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 text-brand-400 hover:underline"
-                >
-                  Inspect in Bull Board
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
+
             </div>
           </div>
         </div>
@@ -188,3 +169,4 @@ export function ScheduledEmailsTab() {
     </div>
   );
 }
+
